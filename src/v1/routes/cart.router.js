@@ -1,80 +1,138 @@
 const express = require('express');
 const router = express.Router();
 const Cart = require('../models/cart.model');
-const Products = require('../models/product.model');
-const CartDetail = require('../models/cartdetail.model');
+const CartDetail = require('../models/cartDetail.model');
 const { authMiddleware } = require('../middleware/auth.middleware');
-const { handleRespone } = require('../utils/handleResponse');
-// Tìm kiếm giỏ hàng của người dùng bằng tên đăng nhập hoặc tạo mới nếu không có
-async function findOrCreateCart(email) {
-  let cart = await Cart.findOne({ email: email });
-  if (!cart) {
-    cart = new Cart({ username: email, total: 0, amount: 0 });
-    await cart.save();
-  }
-  return cart;
-}
+const { err400, err500, ok } = require('../utils/handleResponse');
 
-// API lấy giỏ hàng và thêm sản phẩm
-router.get('/', authMiddleware, async (req, res) => {
-  const { email } = req.user;
-  try {
-    let cart = await findOrCreateCart({ username: email });
-    let { _id } = cart;
-    let cartDetail = await CartDetail.find({
-      cartId: _id,
-    });
-    const data = { cart, cartDetail };
-    res.send(handleRespone(true, `Success`, data, 200));
-  } catch (error) {
-    res.send(handleRespone(false, `Server Error ${error}`, null, 500));
-  }
-  // Tìm kiếm giỏ hàng của người dùng hoặc tạo mới nếu không có
+router.get('/:username', async (req, res) => {
+   const { username } = req.params;
+
+   try {
+      const cart = await Cart.findOne({ username });
+      if (!cart) {
+         return res.status(404).send(err400('Cart not found'));
+      }
+
+      const cartDetails = await CartDetail.find({ cartId: cart._id });
+
+      res.send(ok('Cart retrieved successfully', { cart, cartDetails }));
+   } catch (err) {
+      res.send(err500('Internal Server Error', err));
+   }
 });
 
-router.post('/add', authMiddleware, async (req, res) => {
-  const { email } = req.user;
-  const { productId, amount } = req.body;
+// Add product to cart
+router.post('/add', async (req, res) => {
+   const { username, product, quantity } = req.body;
 
-  let cart = await findOrCreateCart(email);
+   try {
+      let cart = await Cart.findOne({ username });
+      if (!cart) {
+         cart = new Cart({ username, total: 0, amount: 0 });
+         await cart.save();
+      }
 
-  let product = await Products.findById(productId);
-  let cartDetail = await CartDetail.findOne({
-    cartId: cart._id,
-    'product.productId': productId,
-  });
+      let cartDetail = await CartDetail.findOne({
+         cartId: cart._id,
+         'product.productId': product.productId,
+         'product.size': product.size,
+         'product.color': product.color,
+      });
 
-  if (cartDetail) {
-    cartDetail.amount += Number(amount);
-    cartDetail.total =
-      Number(cartDetail.amount) * Number(cartDetail.product.price);
-    await cartDetail.save();
-  } else {
-    const { _id, name, categoriesId, description, price, image } = product;
-    cartDetail = new CartDetail({
-      cartId: cart._id,
-      product: {
-        productId: _id,
-        name,
-        categoriesId,
-        description,
-        price,
-        image,
-      },
-      amount: amount,
-      total: Number(amount) * Number(price),
-    });
-    await cartDetail.save();
-  }
+      if (cartDetail) {
+         cartDetail.quantity += quantity;
+      } else {
+         cartDetail = new CartDetail({ cartId: cart._id, product, quantity });
+      }
 
-  cart.amount += Number(amount);
-  cart.total += Number(cartDetail.total);
-  await cart.save();
+      await cartDetail.save();
 
-  const data = await CartDetail.find({
-    cartId: cart._id,
-  });
-  res.send(handleRespone(true, 'Add cart success', data, 200));
+      // Update cart total and amount
+      const cartDetails = await CartDetail.find({ cartId: cart._id });
+      const total = cartDetails.reduce(
+         (sum, item) => sum + item.product.price * item.quantity,
+         0
+      );
+      const amount = cartDetails.reduce((sum, item) => sum + item.quantity, 0);
+
+      cart.total = total;
+      cart.amount = amount;
+      await cart.save();
+
+      res.send(ok('Product added to cart successfully', cartDetail));
+   } catch (err) {
+      res.send(err500('Internal Server Error', err));
+   }
+});
+
+// Remove product from cart
+router.delete('/remove/:cartDetailId', authMiddleware, async (req, res) => {
+   const { cartDetailId } = req.params;
+
+   try {
+      const cartDetail = await CartDetail.findByIdAndDelete(cartDetailId);
+      if (!cartDetail) {
+         return res.send(err400('Product not found in cart'));
+      }
+
+      const cart = await Cart.findById(cartDetail.cartId);
+      if (!cart) {
+         return res.send(err400('Cart not found'));
+      }
+
+      // Update cart total and amount
+      const cartDetails = await CartDetail.find({ cartId: cart._id });
+      const total = cartDetails.reduce(
+         (sum, item) => sum + item.product.price * item.quantity,
+         0
+      );
+      const amount = cartDetails.reduce((sum, item) => sum + item.quantity, 0);
+
+      cart.total = total;
+      cart.amount = amount;
+      await cart.save();
+
+      res.send(ok('Product removed from cart successfully', cartDetail));
+   } catch (err) {
+      res.send(err500('Internal Server Error', err));
+   }
+});
+
+// Update product quantity in cart
+router.put('/update', authMiddleware, async (req, res) => {
+   const { cartDetailId, quantity } = req.body;
+
+   try {
+      const cartDetail = await CartDetail.findById(cartDetailId);
+      if (!cartDetail) {
+         return res.send(err400('Product not found in cart'));
+      }
+
+      cartDetail.quantity = quantity;
+      await cartDetail.save();
+
+      const cart = await Cart.findById(cartDetail.cartId);
+      if (!cart) {
+         return res.send(err400('Cart not found'));
+      }
+
+      // Update cart total and amount
+      const cartDetails = await CartDetail.find({ cartId: cart._id });
+      const total = cartDetails.reduce(
+         (sum, item) => sum + item.product.price * item.quantity,
+         0
+      );
+      const amount = cartDetails.reduce((sum, item) => sum + item.quantity, 0);
+
+      cart.total = total;
+      cart.amount = amount;
+      await cart.save();
+
+      res.send(ok('Product quantity updated successfully', cartDetail));
+   } catch (err) {
+      res.send(err500('Internal Server Error', err));
+   }
 });
 
 module.exports = router;

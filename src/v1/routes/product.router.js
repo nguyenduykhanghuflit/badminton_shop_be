@@ -1,44 +1,100 @@
 const express = require('express');
 const router = express.Router();
-const Products = require('../models/product.model');
+const Product = require('../models/product.model');
 const { authMiddleware } = require('../middleware/auth.middleware');
-const { handleRespone } = require('../utils/handleResponse');
-router.get('/', async (req, res) => {
-  const { productId } = req.query;
-  const data = productId
-    ? await Products.findById(productId)
-    : await Products.find();
+const { err400, err500, ok } = require('../utils/handleResponse');
 
-  res.send(handleRespone(true, 'Success', { total: data.length, data }, 200));
+router.get('/detail', async (req, res) => {
+   const { productId } = req.query;
+   const data = await Product.findById(productId);
+   res.send(ok('Success', data));
 });
 
-// filter product by: name, categories,pageSize
-router.get('/filter', async (req, res) => {
-  try {
-    const { name, category, pageSize } = req.query;
-    let query = {};
+// Get products by categoryId or search by name
+router.get('/', async (req, res) => {
+   const { categoryId, keyword } = req.query;
 
-    if (name) {
-      query.name = { $regex: name, $options: 'i' };
-    }
+   let filter = {};
+   if (categoryId) {
+      filter.categoriesId = categoryId;
+   }
+   if (keyword) {
+      filter.name = { $regex: keyword, $options: 'i' }; // Case-insensitive search
+   }
 
-    if (category) {
-      query.categoriesId = category;
-    }
+   try {
+      const data = await Product.find(filter);
+      res.send(ok('Success', { total: data.length, data }));
+   } catch (err) {
+      res.send(err500('Internal Server Error', err));
+   }
+});
 
-    const products = await Products.find(query).limit(Number(pageSize));
-    const total = await (await Products.find(query)).length;
+// Create or update a product
+router.post('/', async (req, res) => {
+   const {
+      id,
+      name,
+      branchName,
+      stockQty,
+      categoriesId,
+      description,
+      price,
+      image,
+      color,
+      size,
+   } = req.body;
 
-    const data = {
-      pageSize: products?.length || 0,
-      total: total || 0,
-      totalPage: Math.ceil(total / pageSize) || 0,
-      data: products || null,
-    };
-    res.send(handleRespone(true, 'Success', data, 200));
-  } catch (err) {
-    res.send(handleRespone(true, `Server error ${err}`, null, 500));
-  }
+   try {
+      let product;
+      if (id) {
+         product = await Product.findByIdAndUpdate(
+            id,
+            {
+               name,
+               branchName,
+               stockQty,
+               categoriesId,
+               description,
+               price,
+               image,
+               color,
+               size,
+            },
+            { new: true, runValidators: true }
+         );
+         if (!product) return res.status(404).send(err400('Product not found'));
+      } else {
+         product = new Product({
+            name,
+            branchName,
+            stockQty,
+            categoriesId,
+            description,
+            price,
+            image,
+            color,
+            size,
+         });
+         await product.save();
+      }
+      res.send(ok('Product saved successfully', product));
+   } catch (err) {
+      res.send(err500('Internal Server Error', err));
+   }
+});
+
+// Delete a product
+router.delete('/:id', async (req, res) => {
+   const { id } = req.params;
+
+   try {
+      const product = await Product.findByIdAndDelete(id);
+      if (!product) return res.status(404).send(err400('Product not found'));
+      res.send(ok('Product deleted successfully', product));
+   } catch (err) {
+      res.send(err500('Internal Server Error', err));
+   }
 });
 
 module.exports = router;
