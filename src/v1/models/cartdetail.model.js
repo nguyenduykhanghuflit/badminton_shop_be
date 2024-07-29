@@ -21,8 +21,4 @@ const CartDetail = new Schema(
    }
 );
 
-if (!mongoose.models['CartDetail']) {
-   module.exports = mongoose.model('CartDetail', CartDetail);
-} else {
-   module.exports = mongoose.model('CartDetail');
-}
+module.exports = mongoose.model('CartDetail', CartDetail);
