@@ -7,7 +7,7 @@ const cors = require('cors');
 var path = require('path');
 //init dbs
 require('./v1/databases/init.mongodb');
-const models = require('./v1/models');
+// const models = require('./v1/models');
 
 //user middleware
 app.use(helmet());
@@ -19,9 +19,9 @@ app.use(compression());
 // add body-parser
 app.use(express.json());
 app.use(
-  express.urlencoded({
-    extended: true,
-  })
+   express.urlencoded({
+      extended: true,
+   })
 );
 
 //router
@@ -33,19 +33,19 @@ initRouter(app);
 // Error Handling Middleware called
 
 app.use((req, res, next) => {
-  const error = new Error('Not found');
-  error.status = 404;
-  next(error);
+   const error = new Error('Not found');
+   error.status = 404;
+   next(error);
 });
 
 // error handler middleware
 app.use((error, req, res, next) => {
-  res.status(error.status || 500).send({
-    error: {
-      status: error.status || 500,
-      message: error.message || 'Internal Server Error',
-    },
-  });
+   res.status(error.status || 500).send({
+      error: {
+         status: error.status || 500,
+         message: error.message || 'Internal Server Error',
+      },
+   });
 });
 
 module.exports = app;
