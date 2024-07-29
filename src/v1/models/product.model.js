@@ -8,9 +8,13 @@ const Product = new mongoose.Schema(
       stockQty: { type: Schema.Types.Number, required: false },
       categoriesId: { type: Schema.Types.String, required: true },
       description: { type: Schema.Types.String, required: true },
-      price: { type: Schema.Types.Number, required: true },
+      price: { type: Schema.Types.Decimal128, required: true },
       image: { type: Schema.Types.Array, required: true },
-      salePercent: { type: Schema.Types.Number, required: false, default: 0 },
+      salePercent: {
+         type: Schema.Types.Decimal128,
+         required: false,
+         default: 0,
+      },
       color: [
          {
             name: { type: Schema.Types.String, required: false },

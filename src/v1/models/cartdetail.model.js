@@ -7,7 +7,7 @@ const CartDetail = new Schema(
       product: {
          productId: { type: Schema.Types.String, required: true },
          name: { type: Schema.Types.String, required: true },
-         price: { type: Schema.Types.Number, required: true },
+         price: { type: Schema.Types.Decimal128, required: true },
          image: { type: Schema.Types.Array, required: true },
          color: { type: Schema.Types.String, required: false },
          size: { type: Schema.Types.String, required: false },
