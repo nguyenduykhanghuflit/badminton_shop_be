@@ -66,7 +66,10 @@ router.post('/login', async (req, res) => {
       const token = jwt.sign({ userId: user._id }, 'mysecretkey', {
          expiresIn: '30d',
       });
-      return res.send(ok('Đăng nhập thành công', token));
+
+      user.password = '';
+
+      return res.send(ok('Đăng nhập thành công', { user, token }));
    } catch (err) {
       console.log(err);
       return res.send(err500('Lỗi server', err));
