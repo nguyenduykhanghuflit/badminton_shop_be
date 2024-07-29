@@ -10,6 +10,7 @@ const Product = new mongoose.Schema(
       description: { type: Schema.Types.String, required: true },
       price: { type: Schema.Types.Number, required: true },
       image: { type: Schema.Types.Array, required: true },
+      salePercent: { type: Schema.Types.Number, required: false, default: 0 },
       color: [
          {
             name: { type: Schema.Types.String, required: false },

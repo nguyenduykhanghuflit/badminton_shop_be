@@ -43,6 +43,7 @@ router.post('/', async (req, res) => {
       image,
       color,
       size,
+      salePercent,
    } = req.body;
 
    try {
@@ -60,6 +61,7 @@ router.post('/', async (req, res) => {
                image,
                color,
                size,
+               salePercent,
             },
             { new: true, runValidators: true }
          );
@@ -75,6 +77,7 @@ router.post('/', async (req, res) => {
             image,
             color,
             size,
+            salePercent,
          });
          await product.save();
       }
