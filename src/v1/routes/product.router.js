@@ -12,21 +12,26 @@ router.get('/detail', async (req, res) => {
 
 // Get products by categoryId or search by name
 router.get('/', async (req, res) => {
-   const { categoryId, keyword } = req.query;
+   const { categoryId, keyword, productId } = req.query;
 
-   let filter = {};
-   if (categoryId) {
-      filter.categoriesId = categoryId;
-   }
-   if (keyword) {
-      filter.name = { $regex: keyword, $options: 'i' }; // Case-insensitive search
-   }
+   if (productId) {
+      const data = await Product.findById(productId);
+      res.send(ok('Success', { data }));
+   } else {
+      let filter = {};
+      if (categoryId) {
+         filter.categoriesId = categoryId;
+      }
+      if (keyword) {
+         filter.name = { $regex: keyword, $options: 'i' }; // Case-insensitive search
+      }
 
-   try {
-      const data = await Product.find(filter);
-      res.send(ok('Success', { total: data.length, data }));
-   } catch (err) {
-      res.send(err500('Internal Server Error', err));
+      try {
+         const data = await Product.find(filter);
+         res.send(ok('Success', { total: data.length, data }));
+      } catch (err) {
+         res.send(err500('Internal Server Error', err));
+      }
    }
 });
 
