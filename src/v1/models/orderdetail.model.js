@@ -8,7 +8,7 @@ function getDec(value) {
 }
 const OrderDetail = new mongoose.Schema(
    {
-      orderId: { type: Schema.Types.String, required: true },
+      orderId: { type: Schema.Types.ObjectId, ref: 'Order', required: true },
       amount: { type: Schema.Types.Number, required: true },
       total: { type: Schema.Types.Decimal128, required: true, get: getDec },
       discount: { type: Schema.Types.Decimal128, default: 0, get: getDec },

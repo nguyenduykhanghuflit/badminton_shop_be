@@ -48,7 +48,18 @@ router.get('/:username', async (req, res) => {
    const { username } = req.params;
 
    try {
-      const orders = await Order.find({ username });
+      const orders = await Order.aggregate([
+         { $match: { username } },
+         {
+            $lookup: {
+               from: 'OrderDetail',
+               localField: '_id',
+               foreignField: 'orderId',
+               as: 'orderDetails',
+            },
+         },
+      ]);
+
       if (!orders.length) {
          return res.status(404).send(err400('No orders found'));
       }
