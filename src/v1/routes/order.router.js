@@ -4,7 +4,7 @@ const Order = require('../models/order.model');
 const OrderDetail = require('../models/orderdetail.model');
 const { authMiddleware } = require('../middleware/auth.middleware');
 const { err400, err500, ok } = require('../utils/handleResponse');
-
+const User = require('../models/user.model');
 // Create an order
 router.post('/', async (req, res) => {
    const {
@@ -14,11 +14,17 @@ router.post('/', async (req, res) => {
       discount,
       subTotal,
       note,
-      address,
       status,
       orderDetails,
    } = req.body;
 
+   const user = await User.findOne({ email: username });
+
+   if (!user) {
+      return res.status(404).send(err400('User not found'));
+   }
+
+   const firstAddress = user.information.address[0] || null;
    try {
       const order = new Order({
          username,
@@ -27,7 +33,7 @@ router.post('/', async (req, res) => {
          discount,
          subTotal,
          note,
-         address,
+         address: firstAddress || 'Cập nhật sau',
          status,
       });
       await order.save();
