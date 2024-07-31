@@ -11,9 +11,9 @@ const Order = new mongoose.Schema(
    {
       username: { type: Schema.Types.String, required: true },
       amount: { type: Schema.Types.Number, required: true },
-      total: { type: Schema.Types.Decimal128, required: true },
-      discount: { type: Schema.Types.Decimal128, default: 0 },
-      subTotal: { type: Schema.Types.Decimal128, required: true },
+      total: { type: Schema.Types.Number, required: true },
+      discount: { type: Schema.Types.Number, default: 0 },
+      subTotal: { type: Schema.Types.Number, required: true },
       note: { type: Schema.Types.String },
       address: { type: Schema.Types.String, required: true },
       status: {
