@@ -67,7 +67,7 @@ router.post('/add', async (req, res) => {
 });
 
 // Remove product from cart
-router.delete('/remove/:cartDetailId', authMiddleware, async (req, res) => {
+router.delete('/remove/:cartDetailId', async (req, res) => {
    const { cartDetailId } = req.params;
 
    try {
@@ -100,7 +100,7 @@ router.delete('/remove/:cartDetailId', authMiddleware, async (req, res) => {
 });
 
 // Update product quantity in cart
-router.put('/update', authMiddleware, async (req, res) => {
+router.put('/update', async (req, res) => {
    const { cartDetailId, quantity } = req.body;
 
    try {

@@ -1,106 +1,82 @@
-// const express = require('express');
-// const router = express.Router();
-// const Order = require('../models/order.model');
-// const Products = require('../models/product.model');
-// const OrderDetail = require('../models/orderdetail.model');
-// const { authMiddleware } = require('../middleware/auth.middleware');
-// const { handleRespone } = require('../utils/handleResponse');
-// const { orderStatus } = require('../utils/orderStatus');
+const express = require('express');
+const router = express.Router();
+const Order = require('../models/order.model');
+const OrderDetail = require('../models/orderDetail.model');
+const { authMiddleware } = require('../middleware/auth.middleware');
+const { err400, err500, ok } = require('../utils/handleResponse');
 
-// // API lấy giỏ hàng và thêm sản phẩm
-// router.get('/', authMiddleware, async (req, res) => {
-//   const { email } = req.user; //email is username in order model
-//   res.send(email);
-// });
+// Create an order
+router.post('/', async (req, res) => {
+   const {
+      username,
+      amount,
+      total,
+      discount,
+      subTotal,
+      note,
+      address,
+      status,
+      orderDetails,
+   } = req.body;
 
-// router.post('/', authMiddleware, async (req, res) => {
-//   const { email } = req.user; //email is username in order model
-//   const { products, address } = req.body;
+   try {
+      const order = new Order({
+         username,
+         amount,
+         total,
+         discount,
+         subTotal,
+         note,
+         address,
+         status,
+      });
+      await order.save();
 
-//   //check product valid
-//   if (!Array.isArray(products))
-//     return res.send(handleRespone(false, 'Product Invalid', null, 400));
+      for (const detail of orderDetails) {
+         const orderDetail = new OrderDetail({ orderId: order._id, ...detail });
+         await orderDetail.save();
+      }
 
-//   const listProduct = [];
-//   for (let i = 0; i < products.length; i++) {
-//     let product = await Products.findById(products[i].productId);
-//     if (product) listProduct.push({ product, amount: products[i].amount });
-//     else
-//       return res.send(
-//         handleRespone(false, `Product Invalid ${products[i]}`, null, 400)
-//       );
-//   }
+      res.send(ok('Order created successfully', order));
+   } catch (err) {
+      res.send(err500('Internal Server Error', err));
+   }
+});
 
-//   //handle order
+// Get orders by username
+router.get('/:username', async (req, res) => {
+   const { username } = req.params;
 
-//   const order = new Order({
-//     username: email,
-//     amount: listProduct.length,
-//     total: listProduct.reduce((acc, curr) => {
-//       const product = curr.product;
-//       const amount = curr.amount;
-//       const price = product.price;
+   try {
+      const orders = await Order.find({ username });
+      if (!orders.length) {
+         return res.status(404).send(err400('No orders found'));
+      }
 
-//       return acc + Number(amount) * Number(price);
-//     }, 0),
-//     discount: 0,
-//     subTotal: listProduct.reduce((acc, curr) => {
-//       const product = curr.product;
-//       const amount = curr.amount;
-//       const price = product.price;
+      res.send(ok('Orders retrieved successfully', orders));
+   } catch (err) {
+      res.send(err500('Internal Server Error', err));
+   }
+});
 
-//       return acc + Number(amount) * Number(price);
-//     }, 0),
-//     note: '',
-//     address,
-//   });
-//   await order.save();
+// Update order status
+router.post('/status/:orderId', async (req, res) => {
+   const { orderId } = req.params;
+   const { status } = req.body;
 
-//   for (let i = 0; i < listProduct.length; i++) {
-//     const { product, amount } = listProduct[i];
-//     const orderDetail = new OrderDetail({
-//       orderId: order._id,
-//       amount: amount,
-//       total: Number(amount) * Number(product.price),
-//       discount: 0,
-//       subTotal: Number(amount) * Number(product.price),
-//       productName: product.name,
-//       price: product.price,
-//       image: product.image,
-//     });
-//     await orderDetail.save();
-//   }
-//   res.send(handleRespone());
-// });
+   try {
+      const order = await Order.findById(orderId);
+      if (!order) {
+         return res.send(err400('Order not found'));
+      }
 
-// router.put('/status', authMiddleware, async (req, res) => {
-//   const { orderId, status, note } = req.body;
+      order.status = status;
+      await order.save();
 
-//   const listStatus = orderStatus();
-//   if (!listStatus[status])
-//     return res.send(handleRespone(false, 'Status Invalid', null, 400));
+      res.send(ok('Order status updated successfully', order));
+   } catch (err) {
+      res.send(err500('Internal Server Error', err));
+   }
+});
 
-//   const statusValid = {
-//     waitting: ['approve', 'failed'],
-//     approve: ['dilivery'],
-//     dilivery: ['success', 'failed'],
-//     success: [],
-//     failed: [],
-//   };
-
-//   const order = await Order.findById(orderId);
-
-//   const currentStatus = order.status;
-//   if (!statusValid[currentStatus].includes(status))
-//     return res.send(handleRespone(false, 'Can not update', null, 400));
-
-//   const orderUpdate = await Order.findOneAndUpdate(
-//     { _id: orderId },
-//     { status: status, note: note },
-
-//     { new: true }
-//   );
-//   return res.send(handleRespone(true, 'Update success', orderUpdate, 200));
-// });
-
-// module.exports = router;
+module.exports = router;
