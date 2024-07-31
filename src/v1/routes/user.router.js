@@ -75,59 +75,53 @@ router.post('/login', async (req, res) => {
       return res.send(err500('Lỗi server', err));
    }
 });
+router.post('/profile', authMiddleware, async (req, res) => {
+   try {
+      const userId = req.user._id;
+      const {
+         fullName,
+         phoneNumber,
+         birthday,
+         gender,
+         avtUrl,
+         address,
+         newPassword,
+      } = req.body;
 
-// Lấy thông tin người dùng đang đăng nhập
-// router.get('/me', authMiddleware, (req, res) => {
-//    req.user.password = '';
-//    res.json(req.user);
-// });
+      // Prepare update data
+      const updateData = {
+         'information.fullName': fullName,
+         'information.phoneNumber': phoneNumber,
+         'information.birthday': birthday,
+         'information.gender': gender,
+         'information.avtUrl': avtUrl,
+         'information.address': address,
+      };
 
-// // Thay đổi thông tin người dùng
-// router.put('/me', authMiddleware, async (req, res) => {
-//    try {
-//       // Cập nhật thông tin người dùng
-//       req.user.information.fullName =
-//          req.body.fullName || req.user.information.fullName;
-//       req.user.information.phoneNumber =
-//          req.body.phoneNumber || req.user.information.phoneNumber;
-//       req.user.information.dateOfBirth =
-//          req.body.dateOfBirth || req.user.information.dateOfBirth;
-//       req.user.information.gender =
-//          req.body.gender || req.user.information.gender;
-//       req.user.information.address =
-//          req.body.address || req.user.information.address;
+      if (newPassword) {
+         // Hash the new password and add it to update data
+         const hashedPassword = await bcrypt.hash(newPassword, 10);
+         updateData.password = hashedPassword;
+      }
 
-//       await req.user.save();
+      // Update user information
+      const updatedUser = await User.findByIdAndUpdate(
+         userId,
+         { $set: updateData },
+         { new: true } // Return the updated document
+      );
 
-//       return res.json({ message: 'Cập nhật thông tin thành công' });
-//    } catch (err) {
-//       console.error(err);
-//       res.status(500).json({ message: 'Đã có lỗi xảy ra' });
-//    }
-// });
+      if (!updatedUser) {
+         return res.send(err400('Không tìm thấy người dùng'));
+      }
 
-// // Thay đổi mật khẩu người dùng
-// router.put('/me/password', authMiddleware, async (req, res) => {
-//    try {
-//       // Kiểm tra mật khẩu cũ
-//       const validPassword = await bcrypt.compare(
-//          req.body.currentPassword,
-//          req.user.password
-//       );
-//       if (!validPassword) {
-//          return res.status(400).json({ message: 'Mật khẩu không đúng' });
-//       }
-
-//       // Cập nhật mật khẩu mới
-//       req.user.password = await bcrypt.hash(req.body.newPassword, 10);
-
-//       await req.user.save();
-
-//       return res.json({ message: 'Cập nhật mật khẩu thành công' });
-//    } catch (err) {
-//       console.error(err);
-//       res.status(500).json({ message: 'Đã có lỗi xảy ra' });
-//    }
-// });
+      return res.send(
+         ok('Cập nhật thông tin thành công', { user: updatedUser })
+      );
+   } catch (err) {
+      console.log(err);
+      return res.send(err500('Lỗi server', err));
+   }
+});
 
 module.exports = router;
