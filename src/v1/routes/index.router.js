@@ -2,7 +2,7 @@ const categories = require('./categories.router');
 const products = require('./product.router');
 const users = require('./user.router');
 const carts = require('./cart.router');
-// const orders = require('./order.router');
+const orders = require('./order.router');
 const initRouter = (app) => {
    app.use('/api/categories', categories);
    app.use('/api/product', products);
