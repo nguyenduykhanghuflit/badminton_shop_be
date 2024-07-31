@@ -8,7 +8,7 @@ const initRouter = (app) => {
    app.use('/api/product', products);
    app.use('/api/user', users);
    app.use('/api/cart', carts);
-   // app.use('/api/order', orders);
+   app.use('/api/order', orders);
 };
 
 module.exports = initRouter;
