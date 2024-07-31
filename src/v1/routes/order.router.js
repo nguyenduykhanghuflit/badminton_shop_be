@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const Order = require('../models/order.model');
-const OrderDetail = require('../models/orderDetail.model');
+const OrderDetail = require('../models/orderdetail.model');
 const { authMiddleware } = require('../middleware/auth.middleware');
 const { err400, err500, ok } = require('../utils/handleResponse');
 
