@@ -124,4 +124,20 @@ router.post('/profile', authMiddleware, async (req, res) => {
    }
 });
 
+router.get('/profile', authMiddleware, async (req, res) => {
+   try {
+      const userId = req.user._id;
+      const user = await User.findById(userId).select('-password'); // Exclude password from response
+
+      if (!user) {
+         return res.send(err400('Không tìm thấy người dùng'));
+      }
+
+      return res.send(ok('Lấy thông tin thành công', { user }));
+   } catch (err) {
+      console.log(err);
+      return res.send(err500('Lỗi server', err));
+   }
+});
+
 module.exports = router;
