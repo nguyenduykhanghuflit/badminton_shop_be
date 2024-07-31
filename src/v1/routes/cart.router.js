@@ -67,7 +67,7 @@ router.post('/add', async (req, res) => {
 });
 
 // Remove product from cart
-router.delete('/remove/:cartDetailId', async (req, res) => {
+router.get('/remove/:cartDetailId', async (req, res) => {
    const { cartDetailId } = req.params;
 
    try {
@@ -94,6 +94,27 @@ router.delete('/remove/:cartDetailId', async (req, res) => {
       await cart.save();
 
       res.send(ok('Product removed from cart successfully', cartDetail));
+   } catch (err) {
+      res.send(err500('Internal Server Error', err));
+   }
+});
+
+router.get('/clear/:username', async (req, res) => {
+   const { username } = req.params;
+
+   try {
+      const cart = await Cart.findOne({ username });
+      if (!cart) {
+         return res.status(404).send(err400('Cart not found'));
+      }
+
+      await CartDetail.deleteMany({ cartId: cart._id });
+
+      cart.total = 0;
+      cart.amount = 0;
+      await cart.save();
+
+      res.send(ok('All products removed from cart successfully', cart));
    } catch (err) {
       res.send(err500('Internal Server Error', err));
    }
